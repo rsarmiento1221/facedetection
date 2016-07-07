@@ -15,12 +15,21 @@
  */
 package com.google.android.gms.samples.vision.face.facetracker;
 
+import android.content.res.Resources;
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.RectF;
+import android.graphics.Rect;
 
 import com.google.android.gms.samples.vision.face.facetracker.ui.camera.GraphicOverlay;
 import com.google.android.gms.vision.face.Face;
+import com.google.android.gms.vision.face.Landmark;
+
+import java.util.List;
 
 /**
  * Graphic instance for rendering face position, orientation, and landmarks within an associated
@@ -47,10 +56,14 @@ class FaceGraphic extends GraphicOverlay.Graphic {
     private Paint mFacePositionPaint;
     private Paint mIdPaint;
     private Paint mBoxPaint;
+    private Paint mTipPaint;
 
     private volatile Face mFace;
     private int mFaceId;
     private float mFaceHappiness;
+
+    private Bitmap mMustacheBitmap;
+    private Context mContext;
 
     FaceGraphic(GraphicOverlay overlay) {
         super(overlay);
@@ -69,6 +82,10 @@ class FaceGraphic extends GraphicOverlay.Graphic {
         mBoxPaint.setColor(selectedColor);
         mBoxPaint.setStyle(Paint.Style.STROKE);
         mBoxPaint.setStrokeWidth(BOX_STROKE_WIDTH);
+
+        mTipPaint = new Paint();
+        mTipPaint.setColor(Color.BLUE);
+        mTipPaint.setStyle(Paint.Style.FILL);
     }
 
     void setId(int id) {
@@ -95,14 +112,18 @@ class FaceGraphic extends GraphicOverlay.Graphic {
             return;
         }
 
+        List<Landmark> landmarks = face.getLandmarks();
+
         // Draws a circle at the position of the detected face, with the face's track id below.
+
         float x = translateX(face.getPosition().x + face.getWidth() / 2);
         float y = translateY(face.getPosition().y + face.getHeight() / 2);
-        canvas.drawCircle(x, y, FACE_POSITION_RADIUS, mFacePositionPaint);
+        /*canvas.drawCircle(x, y, FACE_POSITION_RADIUS, mFacePositionPaint);
         canvas.drawText("id: " + mFaceId, x + ID_X_OFFSET, y + ID_Y_OFFSET, mIdPaint);
         canvas.drawText("happiness: " + String.format("%.2f", face.getIsSmilingProbability()), x - ID_X_OFFSET, y - ID_Y_OFFSET, mIdPaint);
         canvas.drawText("right eye: " + String.format("%.2f", face.getIsRightEyeOpenProbability()), x + ID_X_OFFSET * 2, y + ID_Y_OFFSET * 2, mIdPaint);
         canvas.drawText("left eye: " + String.format("%.2f", face.getIsLeftEyeOpenProbability()), x - ID_X_OFFSET*2, y - ID_Y_OFFSET*2, mIdPaint);
+        */
 
         // Draws a bounding box around the face.
         float xOffset = scaleX(face.getWidth() / 2.0f);
@@ -111,6 +132,44 @@ class FaceGraphic extends GraphicOverlay.Graphic {
         float top = y - yOffset;
         float right = x + xOffset;
         float bottom = y + yOffset;
-        canvas.drawRect(left, top, right, bottom, mBoxPaint);
+        //canvas.drawRect(left, top, right, bottom, mBoxPaint);
+
+        for (Landmark landmark: landmarks) {
+            float canvasWidth = canvas.getWidth();
+            float canvasHeight = canvas.getHeight();
+            float width = 640;
+            float height = 480;
+            float scale = Math.min(canvasWidth / width, canvasHeight / height);
+            float cx = landmark.getPosition().x * scale;
+            float cy = landmark.getPosition().y * scale;
+
+            if (landmark.getType() == Landmark.NOSE_BASE) {
+                left = cx - (face.getWidth() / 2);
+                top = cx - (mMustacheBitmap.getHeight() / 2);
+                right = cx + (face.getWidth() / 2);
+                bottom = top + mMustacheBitmap.getHeight();
+
+                //canvas.drawBitmap(mMustacheBitmap, left, top, mTipPaint);
+                Rect src = new Rect();
+                src.left = 0;
+                src.top = 0;
+                src.right = mMustacheBitmap.getWidth();
+                src.bottom = mMustacheBitmap.getHeight();
+
+                RectF dst = new RectF();
+                dst.left = left;
+                dst.top = top;
+                dst.right = right;
+                dst.bottom = bottom;
+
+                canvas.drawBitmap(mMustacheBitmap, src, dst, mTipPaint);
+                canvas.drawCircle(cx, cy, 20, mTipPaint);
+            }
+        }
+    }
+
+    void setContext(Context context) {
+        mContext = context;
+        mMustacheBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.mustache);
     }
 }

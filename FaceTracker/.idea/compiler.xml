@@ -16,7 +16,7 @@
     <annotationProcessing>
       <profile default="true" name="Default" enabled="false">
         <processorPath useClasspath="false">
-          <entry name="$PROJECT_DIR$/../../../AppTest/processorapi" />
+          <entry name="$PROJECT_DIR$/../../AppTest/processorapi" />
         </processorPath>
       </profile>
     </annotationProcessing>
